@@ -1,7 +1,7 @@
 ---
 title: "Data Preparation Assignment"
 subtitle: "Case 31 Employees Federal Credit Union"
-author: "Jae Jung"
+author: "Frank Renn"
 date: today
 format:
   html:
