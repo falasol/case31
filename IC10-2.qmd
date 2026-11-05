@@ -574,6 +574,15 @@ Include tables or output that help a reader verify your decisions. Do not paste 
 **Your narrative:**
 ::: {.callout-note title="Data Preparation Narrative"}
 
+The SPSS file was imported with `haven::read_sav()`, which preserved the variable and value labels. The imported data contained 128 respondents and 34 variables. The data dictionary showed that the questionnaire variables were `haven_labelled` numeric variables. The yes/no items (`q11`, `q12`, `q27`, and `q38`) are nominal, the awareness/use items (`q13`–`q26`) are categorical, and the rating and agreement items are ordinal. The multi-item agreement sets can be treated as approximately interval when their means are used as indices.
+
+The metadata were improved by adding `Unaware = 3` to `q13`–`q26` and `No answer = 3` to `q11`, `q12`, `q27`, and `q38`. The code 6 label for `q37` was corrected from `No Opinion` to `No answer`, and `q8` was relabeled to describe the loan-rate question rather than statement frequency. The questionnaire variables were kept in the analysis copy, while `OverallEmployeePerformace` and `employeeperformance` were excluded because they were unlabeled precomputed summaries whose construction could not be evaluated.
+
+The imported data contained missing values in `q7` (10), `q8` (21), and `q37` (7). The special code 6 did not remain in any of these variables because `read_sav()` converted the user-missing values to `NA`; `na_if()` was still used to ensure that those codes would be treated as missing. I reverse-coded `q7`, `q8`, `q10`, and `q37` so that larger values represented more favorable responses, then attached labels describing the reversed scales. I did not reverse `q9` because its best response was the middle category, `About Right`, and I did not reverse or average `q13`–`q26` because they represent awareness and use of different products rather than one rating scale. Cross-tabulations confirmed that the reverse codes were correct, missing values remained missing, and the response directions were aligned.
+
+The employee-proficiency items had strong evidence for an index: `raw_alpha = 0.87`, all `r.drop` values were positive and strong, and the one-factor loadings ranged from 0.72 to 0.92, explaining about 63% of the variance. I therefore created an employee-proficiency mean index. The operational-effectiveness items had weaker evidence: `raw_alpha = 0.54`, several item-total correlations were weak, and the one-factor solution explained only about 23% of the variance. I did not use an operational-effectiveness index; those items should be analyzed separately or revised with more coherent questions.
+
+One limitation is that several valid response codes were not observed in the sample, and the awareness/use variables are not ideal candidates for a single numerical score. In addition, the operational-effectiveness measure has low reliability, so conclusions based on a combined score for those items would be uncertain.
 
 
 :::
