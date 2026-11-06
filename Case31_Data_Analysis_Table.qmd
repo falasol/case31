@@ -1,0 +1,336 @@
+---
+title: "Data Analysis Table: Case 31"
+subtitle: "Employees Federal Credit Union"
+author: "Frank Renn"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: right
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show R code"
+execute:
+  echo: true
+  message: false
+  warning: true
+  error: false
+---
+
+# Data analysis table
+
+| Hypothesis / RQ | Constructs & Their Role | Operationalization of the Constructs | Scale | Statistical Test |
+|---|---|---|---|---|
+| **R1** | Reasons for joining the Credit Union (descriptive); savings-rate perceptions as context | **Q7**, as listed in the worksheet; **Q7r** is the cleaned file's reversed version. **Q2** directly asks reasons for joining but is unavailable. | Q7/Q7r: interval approximation for the class analysis. Q2 reason selections: nominal. | **DS followed by a one-sample t-test** of the savings-rate rating against 3 = average. This answers the worksheet's rate-perception analysis, not actual reasons for joining. If Q2 becomes available, use multiple-response frequencies and percentages. |
+| **R2** | Reasons for borrowing from other institutions (descriptive); perceptions of CU loan rates as context | **Q28-Q29** directly identify outside borrowing and its reasons, but are unavailable. Available context: **Q8r and Q30**. | Reasons: nominal. Q8r/Q30: interval approximation. | **DS** for available loan-rate opinions; **one-sample t-tests** against 3 for rate perceptions. Use Q29 frequencies among Q28 outside borrowers when available. These ratings alone cannot establish borrowing motives. |
+| **R3** | Attitudes toward employee proficiencies (descriptive) | **Q3-Q6**; **Att_Employee** = mean of Q3-Q6 after a reliability check | Individual items: ordinal, treated as interval in the worksheet. Composite: approximately interval. | **DS and reliability analysis** (Cronbach's alpha; factor analysis if evaluating the underlying structure), followed by a **one-sample t-test** of the composite against 3 = uncertain. |
+| **R4a** | Member residence (**IV**); attitudes toward employee proficiencies (**DV**) | **Q38**; **Att_Employee** | IV: nominal, 1 = yes and 2 = no. DV: approximately interval. | **DS followed by an independent-samples t-test**; use Welch's version to avoid assuming equal variances. |
+| **R4b** | Member residence (**IV**); awareness/use status of services (**DV**) | **Q38**; worksheet **Q13r-Q26r**, represented by available **Q13-Q26** with their three response categories | IV: nominal. DV: ordinal awareness/use categories, analyzed as categorical counts. | **Two-way cross-tabulations followed by chi-square tests of independence**, one per service. Use Fisher's exact test when expected counts are small. |
+| **R4c** | Member residence (**IV**); attitudes toward operational effectiveness (**DVs**, assessed separately) | Worksheet: **Q9r-Q10r, Q11-Q12rc, Q31-Q34, Q37r**. Available equivalents: **Q9, Q10r, Q11, Q12, Q31-Q34, Q37r**. | Residence: nominal. Q10r, Q31-Q34, Q37r: interval approximation. Q11-Q12: nominal. Q9: ordered frequency categories. | **DS followed by independent-samples t-tests** for numeric ratings and **chi-square tests of independence** for nominal responses. Analyze Q9 by category because the intended Q9r recode is not supplied. |
+| **R5** | Awareness and use of services (descriptive) | Worksheet **Q13r-Q26r**; available **Q13-Q26** | Ordinal awareness/use categories | **Frequencies and percentages** for aware-and-used, aware-but-not-used, and unaware. Also report total awareness = codes 1 + 2. No inferential test is required without a specified comparison or benchmark. |
+| **R6** | Attitudes toward operational effectiveness (descriptive) | Worksheet: **Q9r-Q10r, Q11-Q12rc, Q31-Q34, Q37r**; use the available equivalents listed under R4c | Numeric ratings: interval approximation. Q11-Q12: nominal. Q9: ordered categories. | **DS**, plus a reliability check before combining related items. **One-sample t-tests** against 3 for Q31-Q34 and Q37r. Report Q9, Q10r, Q11, and Q12 descriptively unless a meaningful benchmark is specified. |
+| **H1** | Awareness/use status of regular share accounts (**IV / factor**); degree to which current services meet members' needs (**DV**) | Worksheet **Q13r**; available **Q13** as three groups. Outcome: **Q33**. | IV: ordinal categories used as a categorical factor. DV: interval approximation. | **One-way ANOVA** comparing Q33 across the three Q13 groups; Welch ANOVA is used in the code. Follow a significant omnibus result with adjusted pairwise comparisons. |
+| **H2** | Opinion of CU borrowing rates (**paired DV 1**); agreement that CU rates are lower than competitors' rates (**paired DV 2**) | **Q8r and Q30**, from the same respondents; align their scoring direction before comparing | Both are ordinal items treated as interval for the class analysis | **Paired-samples t-test**, because the two ratings come from the same members. A nonsignificant result does not prove equality or equivalence. |
+
+## Notes on the worksheet and coding
+
+1. **R1 and R2 have limited direct evidence.** Q7 measures savings-rate perceptions, even though the worksheet places it under reasons for joining. Q2 is the direct joining-reasons item, and Q28-Q29 are the direct outside-borrowing items. They are absent from the supplied SAV. The table retains the worksheet's Q7 analysis while making this distinction explicit.
+2. **Recoded names do not all exist in the cleaned file.** Q9r, Q12rc, and Q13r-Q26r are absent. The code uses the original Q13-Q26 categories, treats Q12 = 3 as missing, and analyzes Q9 by category. Q9's favorable response is "about right," so simply reversing its codes would not create a uniformly favorable scale. No undocumented recode is assumed.
+3. **H1 retains all three Q13 categories**, consistent with the lecture's comparison of three independent groups. This compares awareness/use groups: aware and used, aware but not used, and unaware. It differs from a binary aware-versus-unaware test and does not demonstrate causal influence.
+4. **The supplied Q8r runs opposite to Q30.** Q8r = 5 means a very high borrowing rate; Q30 = 5 means strong agreement that CU rates are lower than competitors'. The code uses `6 - q8r` in a separate variable so higher values favor lower rates in both measures. The original Q8r column remains unchanged. The questions still differ in wording: absolute versus comparative rates.
+5. **Scale assumptions follow the class framework.** Single rating items are ordinal; the t-tests and ANOVA assume their numerical spacing is a useful interval approximation. Inspect distributions, outliers, and model assumptions. Use two-sided tests at .05. Where multiple related items are tested, the code reports Holm-adjusted p-values alongside raw p-values. The one-sample benchmarks below are stated analysis choices, not benchmarks explicitly supplied in the worksheet.
+
+```{r}
+#| label: setup
+#| include: false
+
+# If needed, run this once in the R CONSOLE, not during rendering:
+# install.packages(c("haven", "knitr"), repos = "https://cloud.r-project.org")
+for (pkg in c("haven", "knitr")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    stop(paste0("Install ", pkg, " first in the R console: install.packages('",
+                pkg, "', repos = 'https://cloud.r-project.org')"))
+  }
+}
+
+# Save this QMD beside the cleaned SAV, or change this path.
+data_file <- "Case 31 Data_efcu_1_cleaned.sav"
+paths <- c(data_file, file.path("data", data_file), file.path("upload", data_file))
+paths <- paths[file.exists(paths)]
+if (length(paths) == 0) stop("Place the cleaned SAV in the same folder as this QMD.")
+dat <- as.data.frame(haven::read_sav(paths[1]))
+names(dat) <- tolower(names(dat))
+q_vars <- grep("^q[0-9]+r?$", names(dat), value = TRUE)
+dat[q_vars] <- lapply(dat[q_vars], as.numeric)
+
+employee_vars <- paste0("q", 3:6)
+awareness_vars <- paste0("q", 13:26)
+operation_vars <- paste0("q", 31:34)
+required <- c(employee_vars, awareness_vars, operation_vars,
+              "q7r", "q8r", "q9", "q10r", "q11", "q12", "q30", "q37r", "q38")
+if (!all(required %in% names(dat))) {
+  stop(paste("Missing variables:", paste(setdiff(required, names(dat)), collapse = ", ")))
+}
+valid <- function(x, codes) {
+  x[!is.na(x) & !(x %in% codes)] <- NA_real_
+  x
+}
+ratings <- c(employee_vars, operation_vars, "q7r", "q8r", "q30", "q37r")
+dat[ratings] <- lapply(dat[ratings], valid, codes = 1:5)
+dat[awareness_vars] <- lapply(dat[awareness_vars], valid, codes = 1:3)
+dat$q9 <- valid(dat$q9, 1:5)
+dat$q10r <- valid(dat$q10r, 1:4)
+dat[c("q11", "q12", "q38")] <- lapply(dat[c("q11", "q12", "q38")], valid, codes = 1:2)
+dat$location <- factor(dat$q38, levels = 1:2, labels = c("Headquarters area", "Elsewhere"))
+dat$Att_Employee <- rowMeans(dat[employee_vars], na.rm = FALSE)
+dat$loan_rate_favorable <- 6 - dat$q8r
+dat$share_group <- factor(dat$q13, levels = 1:3,
+                         labels = c("Aware and used", "Aware, not used", "Unaware"))
+
+employee_names <- c("Courteous", "Helpful", "Professional", "Available")
+operation_names <- c("Keeps information confidential", "Processes loans promptly",
+                     "Services meet needs", "Applications are simple")
+service_names <- c("Regular share accounts", "Special subaccounts", "Christmas club accounts",
+                   "Individual retirement accounts", "MasterCard credit cards", "Signature loans",
+                   "New car loans", "Late-model car loans", "Older-model car loans",
+                   "Household goods/appliance loans", "Recreational loans",
+                   "Share-collateralized loans", "IRA loans", "Line-of-credit loans")
+describe <- function(x) {
+  x <- x[!is.na(x)]
+  data.frame(N = length(x), Mean = mean(x), SD = sd(x), Median = median(x))
+}
+frequency <- function(x, labels) {
+  n <- as.integer(table(factor(x, levels = seq_along(labels))))
+  data.frame(Response = labels, N = n, Valid_percent = 100 * n / sum(n))
+}
+groups <- function(x, group) {
+  do.call(rbind, lapply(levels(droplevels(group)), function(g) {
+    cbind(Group = g, describe(x[!is.na(group) & group == g]))
+  }))
+}
+items <- function(vars, labels) {
+  do.call(rbind, lapply(seq_along(vars), function(i) {
+    cbind(Variable = vars[i], Item = labels[i], describe(dat[[vars[i]]]))
+  }))
+}
+alpha <- function(x) {
+  x <- x[complete.cases(x), , drop = FALSE]
+  k <- ncol(x)
+  v <- var(rowSums(x))
+  if (nrow(x) < 2 || k < 2 || !is.finite(v) || v == 0) return(NA_real_)
+  k / (k - 1) * (1 - sum(vapply(x, var, numeric(1))) / v)
+}
+one_sample <- function(vars, mu = 3) {
+  out <- do.call(rbind, lapply(vars, function(v) {
+    x <- dat[[v]]
+    t <- t.test(x, mu = mu)
+    data.frame(Variable = v, describe(x), Benchmark = mu,
+               Mean_difference = mean(x, na.rm = TRUE) - mu,
+               t = unname(t$statistic), df = unname(t$parameter),
+               Mean_CI_low = t$conf.int[1], Mean_CI_high = t$conf.int[2], P_value = t$p.value)
+  }))
+  out$P_Holm <- p.adjust(out$P_value, method = "holm")
+  out
+}
+location_t <- function(vars) {
+  out <- do.call(rbind, lapply(vars, function(v) {
+    hq <- dat[[v]][!is.na(dat$location) & dat$location == "Headquarters area"]
+    other <- dat[[v]][!is.na(dat$location) & dat$location == "Elsewhere"]
+    t <- t.test(hq, other)
+    data.frame(Variable = v, HQ_N = sum(!is.na(hq)), Elsewhere_N = sum(!is.na(other)),
+               HQ_mean = mean(hq, na.rm = TRUE), Elsewhere_mean = mean(other, na.rm = TRUE),
+               Difference_HQ_minus_elsewhere = unname(t$estimate[1] - t$estimate[2]),
+               CI_low = t$conf.int[1], CI_high = t$conf.int[2], P_value = t$p.value)
+  }))
+  out$P_Holm <- p.adjust(out$P_value, method = "holm")
+  out
+}
+location_categorical <- function(x) {
+  tab <- table(x, dat$location)
+  tab <- tab[rowSums(tab) > 0, , drop = FALSE]
+  if (nrow(tab) < 2 || any(colSums(tab) == 0)) {
+    return(data.frame(N = sum(tab), Test = "Not testable", P_value = NA_real_))
+  }
+  expected <- outer(rowSums(tab), colSums(tab)) / sum(tab)
+  if (any(expected < 5)) {
+    data.frame(N = sum(tab), Test = "Fisher exact", P_value = fisher.test(tab)$p.value)
+  } else {
+    data.frame(N = sum(tab), Test = "Chi-square independence",
+               P_value = chisq.test(tab, correct = FALSE)$p.value)
+  }
+}
+options(digits = 4, width = 110)
+```
+
+# Research questions and supporting R code
+
+## R1: Why do people join the Credit Union?
+
+Q2 is unavailable, so direct reasons cannot be estimated. Following the worksheet, the code describes Q7r and tests its mean against 3 = average. Higher Q7r scores indicate higher perceived savings rates.
+
+```{r}
+#| label: r1
+knitr::kable(frequency(dat$q7r, c("Very low", "Low", "Average", "High", "Very high")),
+             digits = 1, caption = "Savings-rate perceptions: context for R1")
+knitr::kable(one_sample("q7r"), digits = 4,
+             caption = "One-sample t-test against an average savings-rate rating of 3")
+```
+
+## R2: Why do members use other financial institutions when they need to borrow funds?
+
+Q28-Q29 are unavailable. Q8r and Q30 describe rate perceptions only. Q8r > 3 means rates are perceived as high; Q30 > 3 means agreement that CU rates are lower than competitors'. Neither result establishes respondents' actual borrowing reasons.
+
+```{r}
+#| label: r2
+knitr::kable(frequency(dat$q8r, c("Very low", "Low", "Average", "High", "Very high")),
+             digits = 1, caption = "Q8r: Perceived CU borrowing rates")
+knitr::kable(frequency(dat$q30,
+  c("Strongly disagree", "Disagree", "Uncertain", "Agree", "Strongly agree")),
+  digits = 1, caption = "Q30: CU loan rates are lower than competitors' rates")
+knitr::kable(one_sample(c("q8r", "q30")), digits = 4,
+             caption = "Contextual rate-perception tests against 3")
+```
+
+## R3: What are the members' attitudes and beliefs about the proficiencies of credit union employees?
+
+The one-sample test compares the employee composite with 3 = uncertain. Reliability is assessed before interpreting the composite; factor analysis would address a separate question about its latent structure.
+
+```{r}
+#| label: r3
+knitr::kable(items(employee_vars, employee_names), digits = 3)
+knitr::kable(data.frame(Cronbach_alpha = alpha(dat[employee_vars])), digits = 3,
+             caption = "Reliability of Q3-Q6")
+knitr::kable(one_sample("Att_Employee"), digits = 4,
+             caption = "Employee proficiency versus the uncertain midpoint")
+```
+
+## R4: Are there any perceived differences on (a) attitude towards employee proficiencies, (b) awareness of services, and (c) operational effectiveness between members who live in the area of the firm's headquarters and members who live elsewhere?
+
+### R4a: Employee proficiencies
+
+```{r}
+#| label: r4a
+knitr::kable(location_t("Att_Employee"), digits = 4,
+             caption = "Welch independent-samples t-test by residence")
+```
+
+### R4b: Service awareness
+
+The cross-tabulations retain all three awareness/use categories. A significant result indicates a difference in the category distribution, which may reflect use as well as awareness.
+
+```{r}
+#| label: r4b
+cross_tables <- do.call(rbind, lapply(seq_along(awareness_vars), function(i) {
+  tab <- table(factor(dat[[awareness_vars[i]]], levels = 1:3), dat$location)
+  data.frame(Service = service_names[i],
+             Response = c("Aware and used", "Aware, not used", "Unaware"),
+             HQ_N = tab[, 1], Elsewhere_N = tab[, 2],
+             HQ_percent = 100 * tab[, 1] / sum(tab[, 1]),
+             Elsewhere_percent = 100 * tab[, 2] / sum(tab[, 2]), row.names = NULL)
+}))
+knitr::kable(cross_tables, digits = 1, caption = "Awareness/use cross-tabulations by residence")
+service_tests <- do.call(rbind, lapply(seq_along(awareness_vars), function(i) {
+  cbind(Service = service_names[i], location_categorical(dat[[awareness_vars[i]]]))
+}))
+service_tests$P_Holm <- p.adjust(service_tests$P_value, method = "holm")
+knitr::kable(service_tests, digits = 4, caption = "Service-specific independence tests")
+```
+
+### R4c: Operational effectiveness
+
+Numeric ratings are compared with independent-samples t-tests. The yes/no items use independence tests. Q9 also uses a categorical comparison because its five codes describe frequency rather than a uniformly favorable scale.
+
+```{r}
+#| label: r4c
+knitr::kable(location_t(c("q10r", operation_vars, "q37r")), digits = 4,
+             caption = "Operational ratings by residence: higher scores are more favorable")
+categorical_tests <- do.call(rbind, lapply(c("q9", "q11", "q12"), function(v) {
+  cbind(Variable = v, location_categorical(dat[[v]]))
+}))
+categorical_tests$P_Holm <- p.adjust(categorical_tests$P_value, method = "holm")
+knitr::kable(categorical_tests, digits = 4, caption = "Categorical operational responses by residence")
+```
+
+## R5: How well are the members aware of the services offered by the credit union?
+
+```{r}
+#| label: r5
+awareness_summary <- do.call(rbind, lapply(seq_along(awareness_vars), function(i) {
+  x <- dat[[awareness_vars[i]]]
+  x <- x[!is.na(x)]
+  data.frame(Service = service_names[i], N = length(x),
+             Used_N = sum(x == 1), Aware_not_used_N = sum(x == 2), Unaware_N = sum(x == 3),
+             Used_percent = 100 * mean(x == 1),
+             Aware_not_used_percent = 100 * mean(x == 2),
+             Unaware_percent = 100 * mean(x == 3),
+             Total_aware_percent = 100 * mean(x %in% 1:2))
+}))
+knitr::kable(awareness_summary, digits = 1, caption = "Awareness and use of each service")
+```
+
+## R6: What are the members' attitudes and beliefs about how effectively the credit union is operated?
+
+Agreement items are tested against 3 = uncertain; Q37r is tested against 3 = average. Q10r has a four-point scale, so it is described without imposing the same benchmark. Low reliability would argue against combining all operational items into a single index.
+
+```{r}
+#| label: r6
+knitr::kable(items(c("q10r", operation_vars, "q37r"),
+  c("Statement accuracy", operation_names, "Overall management and operations")), digits = 3)
+knitr::kable(data.frame(Cronbach_alpha_Q31_Q34 = alpha(dat[operation_vars])), digits = 3)
+knitr::kable(one_sample(c(operation_vars, "q37r")), digits = 4,
+             caption = "Operational ratings compared with their stated midpoint")
+knitr::kable(frequency(dat$q9,
+  c("Too often", "Very often", "About right", "Not often enough", "Never")),
+  digits = 1, caption = "Q9: Statement frequency")
+knitr::kable(frequency(dat$q10r, c("Poor", "Fair", "Good", "Excellent")),
+             digits = 1, caption = "Q10r: Statement accuracy")
+knitr::kable(frequency(dat$q11, c("Yes", "No")), digits = 1,
+             caption = "Q11: Statements are understandable")
+knitr::kable(frequency(dat$q12, c("Yes", "No")), digits = 1,
+             caption = "Q12: Confidentiality; no-answer responses excluded")
+knitr::kable(frequency(dat$q37r, c("Very poor", "Poor", "Average", "Good", "Excellent")),
+             digits = 1, caption = "Q37r: Overall management and operations")
+```
+
+## H1: Members' awareness of the regular share accounts will influence their opinions on how well the current financial services provided by the credit union meet their needs.
+
+**IV:** Q13 awareness/use group. **DV:** Q33 needs-fulfillment rating. The null hypothesis states that all three group means are equal; the alternative states that at least one differs. Welch's one-way ANOVA avoids assuming equal group variances. Any finding is an association, not evidence of causal influence.
+
+```{r}
+#| label: h1
+knitr::kable(groups(dat$q33, dat$share_group), digits = 3,
+             caption = "Q33 by the three regular-share awareness/use groups")
+h1 <- oneway.test(q33 ~ share_group, data = dat, var.equal = FALSE)
+h1
+if (h1$p.value < .05) {
+  pairwise.t.test(dat$q33, dat$share_group, pool.sd = FALSE, p.adjust.method = "holm")
+}
+```
+
+## H2: Members will not be different in their opinion on CU's loan rate (Q8r) and the degree to which they agree that CU's loan rate is lower than competitors (Q30).
+
+The two variables are paired measurements from the same respondents. After aligning Q8r's direction, test whether the mean within-person difference is zero. This compares scored responses under an interval approximation; it does not establish that the two differently worded items measure an identical construct.
+
+```{r}
+#| label: h2
+# loan_rate_favorable = 6 - q8r, computed in setup; q8r itself is retained.
+paired <- dat[complete.cases(dat[c("loan_rate_favorable", "q30")]), ]
+knitr::kable(rbind(
+  cbind(Measure = "Q8r as supplied: higher means higher rates", describe(paired$q8r)),
+  cbind(Measure = "Aligned Q8r: higher means lower rates", describe(paired$loan_rate_favorable)),
+  cbind(Measure = "Q30: agreement CU rates are lower", describe(paired$q30))
+), digits = 3, caption = "Loan-rate ratings among complete respondent pairs")
+h2 <- t.test(paired$loan_rate_favorable, paired$q30, paired = TRUE)
+h2
+# p < .05 contradicts the no-difference hypothesis on aligned scores.
+# p >= .05 means insufficient evidence of a difference, not proof of equivalence.
+```
+
+# Source materials
+
+- *IC - M08 - Data Analysis Table - Research Questions-Case31-Assignment (1).doc*: question wording, five table columns, and partially completed examples.
+- *Ch15 - Data Preparation and Analysis Strategy.pptx*, slides 23-25: test-selection framework and classification of techniques.
+- Provided lecture transcript, *Pasted text(20261106-041059).txt*: sample structure, ANOVA factors, paired comparisons, and multivariate terminology.
+- *Case 31 - Employees Federal Credit Union.PDF*: questionnaire wording and response coding.
+- *Case 31 Data_efcu_1_cleaned.sav*: available variables and recoding labels.

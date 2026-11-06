@@ -1,0 +1,38 @@
+---
+title: "Data Analysis Table: Case 31"
+subtitle: "Employees Federal Credit Union"
+author: "Frank Renn"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: right
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show R code"
+execute:
+  echo: true
+  message: false
+  warning: true
+  error: false
+---
+
+| Hypothesis / RQ | Constructs & Their Role | Operationalization of the Constructs | Scale | Statistical Test |
+|---|---|---|---|---|
+| **R1** | Reasons for joining the Credit Union (descriptive); savings-rate perceptions as context | Q7 | Interval | **DS followed by a one-sample t-test** of the savings-rate rating against 3 = average. This answers the worksheet's rate-perception analysis, not actual reasons for joining. If Q2 becomes available, use multiple-response frequencies and percentages. |
+| **R2** | Reasons for borrowing from other institutions (descriptive); perceptions of CU loan rates as context | Q8r<br>Q30 | Interval<br>Interval | **DS** for available loan-rate opinions; **one-sample t-tests** against 3 for rate perceptions. Use Q29 frequencies among Q28 outside borrowers when available. These ratings alone cannot establish borrowing motives. |
+| **R3** | Attitudes toward employee proficiencies (descriptive) | Q3 – Q6 | Interval | **DS and reliability analysis** (Cronbach's alpha; factor analysis if evaluating the underlying structure), followed by a **one-sample t-test** of the composite against 3 = uncertain. |
+| **R4a** | Member residence (**IV**); attitudes toward employee proficiencies (**DV**) | Q38<br>Att_Employee | Nominal (1=yes, 2=no)<br>Interval | **DS followed by an independent-samples t-test**; use Welch's version to avoid assuming equal variances. |
+| **R4b** | Member residence (**IV**); awareness/use status of services (**DV**) | Q38<br>Q13r – Q26r | Nominal (1=yes, 2=no)<br>Ordinal | **Two-way cross-tabulations followed by chi-square tests of independence**, one per service. Use Fisher's exact test when expected counts are small. |
+| **R4c** | Member residence (**IV**); attitudes toward operational effectiveness (**DVs**, assessed separately) | Q38<br>Q9r – Q10r<br>Q11 – Q12rc<br>Q31 – Q34<br>Q37r | Nominal (1=yes, 2=no)<br>Interval<br>Nominal<br>Interval<br>Interval | **DS followed by independent-samples t-tests** for numeric ratings and **chi-square tests of independence** for nominal responses. Analyze Q9 by category because the intended Q9r recode is not supplied. |
+| **R5** | Awareness and use of services (descriptive) | Q13r – Q26r | Ordinal | **Frequencies and percentages** for aware-and-used, aware-but-not-used, and unaware. Also report total awareness = codes 1 + 2. No inferential test is required without a specified comparison or benchmark. |
+| **R6** | Attitudes toward operational effectiveness (descriptive) | Q9r – Q10r<br>Q11 – Q12rc<br>Q31 – Q34<br>Q37r | Interval<br>Nominal<br>Interval<br>Interval | **DS**, plus a reliability check before combining related items. **One-sample t-tests** against 3 for Q31-Q34 and Q37r. Report Q9, Q10r, Q11, and Q12 descriptively unless a meaningful benchmark is specified. |
+| **H1** | Awareness/use status of regular share accounts (**IV / factor**); degree to which current services meet members' needs (**DV**) | Q13r<br>Q33 | Ordinal<br>Interval | **One-way ANOVA** comparing Q33 across the three Q13 groups; Welch ANOVA is used in the code. Follow a significant omnibus result with adjusted pairwise comparisons. |
+| **H2** | Opinion of CU borrowing rates (**paired DV 1**); agreement that CU rates are lower than competitors' rates (**paired DV 2**) | Q8r<br>Q30 | Interval<br>Interval | **Paired-samples t-test**, because the two ratings come from the same members. A nonsignificant result does not prove equality or equivalence. |
+
+# Appendix
+
+-   [View my GitHub Pages report](https://falasol.github.io/case31/IC10-2-2.html)
+
+-   [GithUb Repo for Case 31](https://github.com/falasol/case31)
