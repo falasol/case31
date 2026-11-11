@@ -1,0 +1,607 @@
+---
+title: "Case 31 Employees Federal Credit Union"
+subtitle: "IC11-2 Summary of Data Analysis • R1, R2, R5, and R6"
+author: "Frank Renn"
+date: "2026-11-10"
+format:
+  revealjs:
+    theme: simple
+    width: 1280
+    height: 720
+    margin: 0.07
+    center: false
+    slide-number: c/t
+    transition: none
+    navigation-mode: linear
+    controls: true
+    progress: true
+    history: false
+    embed-resources: true
+    html-math-method: plain
+    preview-links: false
+    footer: "Frank Renn · IC11-2 · Case 31"
+execute:
+  echo: false
+  message: false
+  warning: false
+  error: false
+params:
+  data-file: "Case 31 Data_efcu_1_cleaned.sav"
+  repo-url: ""
+  pages-url: ""
+include-in-header:
+  - text: |
+      <style>
+      :root { --ink: #17324d; --teal: #147d85; --muted: #536476; }
+      .reveal { font-family: Arial, sans-serif; font-size: 28px; color: var(--ink); }
+      .reveal h1, .reveal h2, .reveal h3 { font-family: Arial, sans-serif; font-weight: 700; text-transform: none; color: var(--ink); }
+      .reveal h1 { font-size: 1.8em; }
+      .reveal h2 { font-size: 1.38em; margin-bottom: 0.45em; }
+      .reveal h3 { font-size: 1em; }
+      .reveal p, .reveal li { line-height: 1.3; }
+      .reveal p { margin: 0.45em 0; }
+      .reveal li { margin-bottom: 0.32em; }
+      .reveal a { color: var(--teal); }
+      .reveal strong { color: var(--teal); }
+      .reveal table { font-size: 0.73em; width: 100%; margin: 0.45em 0; border-collapse: collapse; }
+      .reveal table th { color: var(--ink); border-bottom: 2px solid #147d85; background: #edf5f5; }
+      .reveal table th, .reveal table td { padding: 0.28em 0.45em; border-bottom: 1px solid #dbe3e8; }
+      .reveal table tbody tr:nth-child(even) { background: #f6f8fa; }
+      .reveal .quarto-figure { margin: 0.2em 0; }
+      .reveal .quarto-figure-center > figure > figcaption,
+      .reveal .quarto-figure figcaption, .reveal .quarto-float-caption { font-size: 18px; color: var(--muted); }
+      .reveal .note { font-size: 0.72em; color: var(--muted); }
+      .reveal .compact { font-size: 0.84em; }
+      .reveal .dense table { font-size: 0.65em; }
+      .reveal .dense table th, .reveal .dense table td { padding: 0.20em 0.40em; }
+      .reveal .takeaway { background: #edf5f5; border-left: 5px solid #147d85; padding: 0.45em 0.65em; margin-top: 0.5em; }
+      .reveal .columns { gap: 32px; }
+      .reveal .footer { font-size: 14px; color: #536476; }
+      .reveal pre { font-size: 0.64em; }
+      #title-slide { text-align: left; }
+      #title-slide .title { margin-top: 100px; }
+      #title-slide .subtitle { color: var(--teal); font-size: 0.9em; }
+      </style>
+
+---
+
+```{r}
+#| label: setup
+#| include: false
+# Run once in the R console if needed:
+# install.packages(c("foreign", "knitr", "rmarkdown"))
+default_params <- list(
+  "data-file" = "Case 31 Data_efcu_1_cleaned.sav",
+  "repo-url" = "",
+  "pages-url" = ""
+)
+if (!exists("params", inherits = FALSE) || !is.list(params)) params <- list()
+for (key in names(default_params)) {
+  if (is.null(params[[key]])) params[[key]] <- default_params[[key]]
+}
+for (pkg in c("foreign", "knitr")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    stop(paste("Install the required package first:", pkg))
+  }
+}
+candidate_paths <- c(params[["data-file"]],
+                     file.path("data", params[["data-file"]]),
+                     file.path("case31", params[["data-file"]]))
+candidate_paths <- candidate_paths[file.exists(candidate_paths)]
+if (!length(candidate_paths)) {
+  stop("Place Case 31 Data_efcu_1_cleaned.sav beside this QMD, or update params:data-file.")
+}
+raw <- foreign::read.spss(candidate_paths[1], to.data.frame = TRUE,
+                          use.value.labels = FALSE, use.missings = TRUE)
+names(raw) <- tolower(names(raw))
+dat <- raw
+keep_codes <- function(x, valid) {
+  x <- as.numeric(x)
+  x[!is.na(x) & !(x %in% valid)] <- NA_real_
+  x
+}
+required <- c("q7", "q8", "q9", "q10", "q11", "q12",
+              paste0("q", 13:26), paste0("q", 30:34), "q37")
+stopifnot(all(required %in% names(dat)))
+# Recompute from ORIGINAL variables; never reverse an existing reversed item.
+dat$q7r <- 6 - keep_codes(raw$q7, 1:5)
+dat$q8r <- 6 - keep_codes(raw$q8, 1:5)
+dat$q9r <- 6 - keep_codes(raw$q9, 1:5)
+dat$q10r <- 5 - keep_codes(raw$q10, 1:4)
+dat$q11 <- keep_codes(raw$q11, 1:2)
+dat$q12rc <- keep_codes(raw$q12, 1:2)
+dat$q37r <- 6 - keep_codes(raw$q37, 1:5)
+for (v in paste0("q", 30:34)) dat[[v]] <- keep_codes(raw[[v]], 1:5)
+awareness_vars <- paste0("q", 13:26, "r")
+for (i in 13:26) dat[[paste0("q", i, "r")]] <- 4 - keep_codes(raw[[paste0("q", i)]], 1:3)
+N <- nrow(dat)
+service_names <- c("Regular share accounts", "Special subaccounts",
+                   "Christmas club accounts", "Individual retirement accounts",
+                   "MasterCard credit cards", "Signature loans", "New car loans",
+                   "Late-model car loans", "Older-model car loans",
+                   "Household goods/appliance loans", "Recreational loans",
+                   "Share-collateralized loans", "IRA loans", "Line-of-credit loans")
+fmt <- function(x, digits = 2) formatC(x, format = "f", digits = digits)
+p_fmt <- function(p) ifelse(p < .001, "< .001", sub("^0", "", fmt(p, 3)))
+p_statement <- function(p) ifelse(p < .001, "p < .001", paste0("p = ", p_fmt(p)))
+pct <- function(x, digits = 1) paste0(fmt(100 * x, digits), "%")
+count_pct <- function(n, total) paste0(n, " (", pct(n / total), ")")
+share <- function(v, codes) mean(dat[[v]][!is.na(dat[[v]])] %in% codes)
+freq <- function(x, labels) {
+  counts <- as.integer(table(factor(x, levels = seq_along(labels))))
+  data.frame(Response = labels, n = counts,
+             "Valid %" = pct(counts / sum(counts)), check.names = FALSE)
+}
+one_sample <- function(vars, labels, mu = 3) {
+  out <- do.call(rbind, lapply(seq_along(vars), function(i) {
+    x <- dat[[vars[i]]]
+    x <- x[!is.na(x)]
+    result <- t.test(x, mu = mu, alternative = "two.sided", conf.level = .95)
+    data.frame(Item = labels[i], Variable = vars[i], n = length(x),
+               Mean = mean(x), SD = sd(x), Median = median(x),
+               CI_low = result$conf.int[1], CI_high = result$conf.int[2],
+               t = unname(result$statistic), df = unname(result$parameter),
+               p = result$p.value, stringsAsFactors = FALSE)
+  }))
+  out$p_holm <- p.adjust(out$p, method = "holm")
+  out
+}
+describe_table <- function(tests) {
+  data.frame(Item = tests$Item, n = tests$n, Mean = fmt(tests$Mean),
+             SD = fmt(tests$SD), Median = fmt(tests$Median, 1),
+             "95% CI for mean" = paste0(fmt(tests$CI_low), "–", fmt(tests$CI_high)),
+             check.names = FALSE)
+}
+test_table <- function(tests) {
+  data.frame(Item = tests$Item, "Mean − 3" = fmt(tests$Mean - 3),
+             t = fmt(tests$t), df = tests$df, p = p_fmt(tests$p),
+             "Holm p" = p_fmt(tests$p_holm), check.names = FALSE)
+}
+equal_gof <- function(x, k) {
+  counts <- as.integer(table(factor(x, levels = seq_len(k))))
+  # Include zero-count categories in the specified null distribution.
+  test <- chisq.test(counts, p = rep(1 / k, k))
+  data.frame(n = sum(counts), X2 = unname(test$statistic),
+             df = unname(test$parameter), p = test$p.value,
+             min_expected = min(test$expected))
+}
+show_table <- function(x) {
+  knitr::kable(x, format = "html", escape = TRUE,
+               row.names = FALSE, table.attr = 'class="analysis-table"')
+}
+r1 <- one_sample("q7r", "Savings-rate perception")
+r2 <- one_sample(c("q8r", "q30"), c("Q8r Borrowing-rate perception", "Q30 CU rates lower than competitors"))
+awareness <- do.call(rbind, lapply(seq_along(awareness_vars), function(i) {
+  x <- dat[[awareness_vars[i]]]
+  counts <- as.integer(table(factor(x, levels = 1:3)))
+  data.frame(Variable = awareness_vars[i], Service = service_names[i],
+             n = sum(counts), Unaware = counts[1],
+             Aware_not_used = counts[2], Used = counts[3],
+             Aware = counts[2] + counts[3])
+}))
+awareness_gof <- do.call(rbind, lapply(seq_along(awareness_vars), function(i) {
+  cbind(Service = service_names[i], equal_gof(dat[[awareness_vars[i]]], 3))
+}))
+awareness_gof$p_holm <- p.adjust(awareness_gof$p, "holm")
+awareness_table <- data.frame(
+  Item = paste0("Q", 13:26), Service = awareness$Service,
+  "Used n (%)" = count_pct(awareness$Used, awareness$n),
+  "Aware, not used n (%)" = count_pct(awareness$Aware_not_used, awareness$n),
+  "Unaware n (%)" = count_pct(awareness$Unaware, awareness$n),
+  "Total aware" = pct(awareness$Aware / awareness$n), check.names = FALSE)
+categorical_vars <- c("q9r", "q10r", "q11", "q12rc")
+categorical_names <- c("Q9 Statement frequency", "Q10 Statement accuracy",
+                       "Q11 Easy to understand", "Q12 Account confidentiality")
+categorical_k <- c(5, 4, 2, 2)
+categorical_gof <- do.call(rbind, lapply(seq_along(categorical_vars), function(i) {
+  cbind(Item = categorical_names[i], equal_gof(dat[[categorical_vars[i]]], categorical_k[i]))
+}))
+categorical_gof$p_holm <- p.adjust(categorical_gof$p, "holm")
+operations <- one_sample(c(paste0("q", 31:34), "q37r"),
+                         c("Q31 Financial information confidential", "Q32 Prompt loan processing",
+                           "Q33 Services meet needs", "Q34 Simple loan applications",
+                           "Q37r Overall management and operations"))
+options(digits = 4, width = 100)
+```
+
+## Purpose and sample
+
+EFCU wants to understand low borrowing and members' views of its services and operations.
+This report analyzes **R1, R2, R5, and R6** using the cleaned Module 10 dataset.
+
+- **`r N` responses** are available. Percentages use each item's valid responses.
+- The case used a mail survey and a simple random sample of 300 from a membership frame of 3,531.
+- Q2 and Q28–Q29 are absent from this dataset. Rate perceptions provide context for R1 and R2, but cannot establish members' actual reasons.
+
+::: {.note}
+The narrative describes 125 returns and 123 usable questionnaires; the supplied teaching dataset contains `r N` rows. The analysis uses the supplied data. A response rate is not calculated from these inconsistent counts.
+:::
+
+## Analysis plan
+
+| Research question | Available measures | Analysis |
+|---|---|---|
+| **R1** Reasons for joining | Q7r Savings-rate perception | Frequencies and one-sample t-test |
+| **R2** Reasons for outside borrowing | Q8r Borrowing-rate perception; Q30 Comparative rates | Frequencies and one-sample t-tests |
+| **R5** Service awareness | Q13r–Q26r | Frequencies and chi-square goodness-of-fit tests |
+| **R6** Operational effectiveness | Q9r–Q10r, Q11–Q12rc, Q31–Q34, Q37r | Frequencies, chi-square goodness-of-fit tests, and one-sample t-tests |
+
+::: {.note}
+Tests follow the instructor's worked example. The t-test benchmark is 3. Goodness-of-fit tests use equal proportions across all valid response categories. Two-sided tests use α = .05; Holm adjustments are reported within related sets of tests.
+:::
+
+## R1 Why do people join the Credit Union?
+
+**Descriptive statistics · Savings-rate perceptions (Q7r)**
+
+:::: {.columns}
+::: {.column width="48%"}
+```{r}
+#| label: tbl-r1-frequency
+#| tbl-cap: "Q7r Savings-rate perceptions"
+#| results: asis
+show_table(freq(dat$q7r, c("Very low", "Low", "Average", "High", "Very high")))
+```
+:::
+::: {.column width="52%"}
+As @tbl-r1-frequency shows, **`r pct(share("q7r", 3))`** of valid respondents rate savings rates as average; **`r pct(share("q7r", 4:5))`** rate them high or very high.
+
+There are `r r1$n` valid responses and `r N - r1$n` excluded responses.
+
+The results do not show a clear perception of unusually high savings rates. Q2 is needed to determine whether rates actually motivated joining.
+:::
+::::
+
+## R1 One-sample t-test
+
+Compare the mean savings-rate rating with **3 = average**.
+
+```{r}
+#| label: tbl-r1-descriptive
+#| tbl-cap: "Q7r Descriptive statistics"
+#| results: asis
+show_table(describe_table(r1))
+```
+
+```{r}
+#| label: tbl-r1-test
+#| tbl-cap: "Q7r Two-sided one-sample t-test against 3"
+#| results: asis
+show_table(test_table(r1)[, c("Item", "Mean − 3", "t", "df", "p")])
+```
+
+::: {.takeaway}
+The average rating is **`r fmt(r1$Mean)`**, close to the scale's average category. The test provides insufficient evidence of a difference from 3 (t(`r r1$df`) = `r fmt(r1$t)`, `r p_statement(r1$p)`; @tbl-r1-test). This does not prove that the population mean equals 3.
+:::
+
+## R2 Why do members borrow elsewhere?
+
+**Descriptive statistics · Two views of EFCU's loan rates**
+
+:::: {.columns}
+::: {.column width="48%"}
+```{r}
+#| label: tbl-r2-rate-frequency
+#| tbl-cap: "Q8r Perceived borrowing rates"
+#| results: asis
+show_table(freq(dat$q8r, c("Very low", "Low", "Average", "High", "Very high")))
+```
+::: {.note}
+Valid n = `r r2$n[1]`; `r N - r2$n[1]` excluded. Higher scores mean higher rates.
+:::
+:::
+::: {.column width="52%"}
+```{r}
+#| label: tbl-r2-comparison-frequency
+#| tbl-cap: "Q30 CU rates are lower than competitors'"
+#| results: asis
+show_table(freq(dat$q30, c("Strongly disagree", "Disagree", "Uncertain", "Agree", "Strongly agree")))
+```
+::: {.note}
+Valid n = `r r2$n[2]`. Higher scores mean stronger agreement that CU rates are lower.
+:::
+:::
+::::
+
+::: {.compact}
+Most valid Q8r responses are **average (`r pct(share("q8r", 3))`)**. For Q30, **`r pct(share("q30", 3))` are uncertain** and `r pct(share("q30", 4:5))` agree that CU rates are lower (@tbl-r2-rate-frequency; @tbl-r2-comparison-frequency).
+:::
+
+## R2 One-sample t-tests
+
+```{r}
+#| label: tbl-r2-descriptive
+#| tbl-cap: "Loan-rate perceptions Descriptive statistics"
+#| results: asis
+show_table(describe_table(r2))
+```
+
+```{r}
+#| label: tbl-r2-tests
+#| tbl-cap: "Loan-rate perceptions Two-sided t-tests against 3"
+#| results: asis
+show_table(test_table(r2))
+```
+
+::: {.compact}
+Neither mean differs significantly from 3 at .05 (@tbl-r2-tests). There is no clear evidence here that members see a strong rate advantage.
+
+**Actual outside-borrowing reasons remain unanswered.** Q28 identifies outside borrowers and Q29 asks why they borrowed elsewhere; both are missing. These ratings alone cannot show that price caused borrowing decisions.
+:::
+
+## R5 How well are members aware of services?
+
+```{r}
+#| label: fig-r5-awareness
+#| fig-cap: "Awareness and use by service; the right column shows total awareness"
+#| fig-width: 11
+#| fig-height: 4.6
+#| fig-dpi: 170
+#| out-width: "100%"
+ord <- rev(order(awareness$Aware / awareness$n))
+plot_data <- t(as.matrix(awareness[ord, c("Used", "Aware_not_used", "Unaware")]))
+plot_data <- sweep(plot_data, 2, awareness$n[ord], "/") * 100
+par(mar = c(2.8, 14.6, 3.2, 4.6), family = "sans", col.axis = "#17324d",
+    fg = "#17324d", cex = .93)
+bar_y <- barplot(plot_data, horiz = TRUE, border = NA, xlim = c(0, 100),
+                 names.arg = awareness$Service[ord], las = 1,
+                 col = c("#147d85", "#a4d5d4", "#e4e9ee"),
+                 xlab = "", axes = FALSE, space = .32)
+axis(1, at = seq(0, 100, 20), labels = paste0(seq(0, 100, 20), "%"), tick = FALSE)
+legend("top", inset = c(0, -.08), xpd = NA, horiz = TRUE, bty = "n",
+        legend = c("Aware and used", "Aware, not used", "Unaware"),
+        fill = c("#147d85", "#a4d5d4", "#e4e9ee"), cex = .86)
+text(103, bar_y, pct(awareness$Aware[ord] / awareness$n[ord]),
+     pos = 4, xpd = NA, cex = .87, col = "#17324d")
+```
+
+::: {.note}
+Total aware = aware and used + aware but not used. Each service has `r min(awareness$n)` valid responses. See @tbl-r5-frequency-a and @tbl-r5-frequency-b for counts.
+:::
+
+## R5 Descriptive statistics Q13–Q19
+
+```{r}
+#| label: tbl-r5-frequency-a
+#| tbl-cap: "Service awareness and use Q13–Q19"
+#| results: asis
+show_table(awareness_table[1:7, ])
+```
+
+::: {.compact}
+**Regular share accounts have the lowest awareness (`r pct(awareness$Aware[1] / awareness$n[1])`).** Confirm that members understand this product name before treating this result solely as a communication problem.
+:::
+
+::: {.note}
+Percentages use valid responses within each service. “Used” means aware and have used; it does not measure current holdings or recent activity.
+:::
+
+## R5 Descriptive statistics Q20–Q26
+
+```{r}
+#| label: tbl-r5-frequency-b
+#| tbl-cap: "Service awareness and use Q20–Q26"
+#| results: asis
+show_table(awareness_table[8:14, ])
+```
+
+::: {.compact}
+**Line-of-credit loans are universally recognized in this sample**, but only `r pct(awareness$Used[14] / awareness$n[14])` report ever using them. Awareness and use describe different parts of the borrowing opportunity.
+:::
+
+## R5 Chi-square goodness-of-fit tests {.dense}
+
+For each service, H₀ specifies **one-third in each awareness/use category**; Hₐ specifies at least one different proportion.
+
+```{r}
+#| label: tbl-r5-tests
+#| tbl-cap: "Awareness distributions compared with equal thirds"
+#| results: asis
+show_table(data.frame(Service = awareness_gof$Service,
+                      "χ²" = fmt(awareness_gof$X2), df = awareness_gof$df,
+                      p = p_fmt(awareness_gof$p),
+                      "Holm p" = p_fmt(awareness_gof$p_holm), check.names = FALSE))
+```
+
+::: {.note}
+All three categories remain in every test, including Q26's zero “unaware” responses. Minimum expected count = `r fmt(min(awareness_gof$min_expected), 1)`. Equal thirds is the instructor's comparison distribution, not an EFCU performance target.
+:::
+
+## R5 What the results mean
+
+- **Awareness varies substantially.** It ranges from `r pct(min(awareness$Aware / awareness$n))` for regular share accounts to `r pct(max(awareness$Aware / awareness$n))` for line-of-credit loans (@fig-r5-awareness).
+- **Some recognized loans have limited use.** Signature loans are known by `r pct(awareness$Aware[6] / awareness$n[6])`, yet `r pct(awareness$Used[6] / awareness$n[6])` have used them. New car loans show a similar gap (@tbl-r5-frequency-a).
+- **All 14 distributions differ from equal thirds**, including after Holm adjustment (@tbl-r5-tests). The direction comes from the frequencies: unawareness is not the largest category for every service.
+
+::: {.takeaway}
+Use targeted explanations for poorly recognized products and investigate barriers for well-known loans with low use. The survey does not establish which action will increase borrowing.
+:::
+
+## R6 How effectively is EFCU operated?
+
+**Descriptive statistics · Statement frequency and accuracy**
+
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+#| label: tbl-r6-frequency
+#| tbl-cap: "Q9 Statement frequency"
+#| results: asis
+show_table(freq(dat$q9r, c("Never", "Not often enough", "About right", "Very often", "Too often")))
+```
+:::
+::: {.column width="50%"}
+```{r}
+#| label: tbl-r6-accuracy
+#| tbl-cap: "Q10 Statement accuracy"
+#| results: asis
+show_table(freq(dat$q10r, c("Poor", "Fair", "Good", "Excellent")))
+```
+:::
+::::
+
+::: {.compact}
+Most members say statement frequency is **about right (`r pct(share("q9r", 3))`)**, but **`r pct(share("q9r", 2))` want statements more often** (@tbl-r6-frequency). Statement accuracy is rated good or excellent by `r pct(share("q10r", 3:4))` (@tbl-r6-accuracy).
+:::
+
+## R6 Understandability and confidentiality
+
+```{r}
+#| label: tbl-r6-binary
+#| tbl-cap: "Yes/no operational responses"
+#| results: asis
+binary_vars <- c("q11", "q12rc")
+show_table(do.call(rbind, lapply(seq_along(binary_vars), function(i) {
+  x <- dat[[binary_vars[i]]]
+  n_valid <- sum(!is.na(x))
+  data.frame(Item = c("Q11 Statements easy to understand", "Q12 Account information confidential")[i],
+             "Valid n" = n_valid, "Yes n (%)" = count_pct(sum(x == 1, na.rm = TRUE), n_valid),
+             "No n (%)" = count_pct(sum(x == 2, na.rm = TRUE), n_valid),
+             Excluded = N - n_valid, check.names = FALSE)
+})))
+```
+
+Statements are understandable to **`r pct(share("q11", 1))`** of respondents.
+
+Confidentiality deserves follow-up: **`r sum(dat$q12rc == 2, na.rm = TRUE)` of `r sum(!is.na(dat$q12rc))` valid respondents (`r pct(share("q12rc", 2))`) answer no**, while `r sum(is.na(dat$q12rc))` responses are excluded (@tbl-r6-binary).
+
+::: {.note}
+Q12's code 3 means no answer and is excluded. It is not a third substantive opinion. Q31 separately asks about personal financial information, so the two items should not be treated as identical.
+:::
+
+## R6 Chi-square goodness-of-fit tests
+
+```{r}
+#| label: tbl-r6-categorical-tests
+#| tbl-cap: "Categorical operational responses compared with equal category proportions"
+#| results: asis
+show_table(data.frame(Item = categorical_gof$Item, n = categorical_gof$n,
+                      "χ²" = fmt(categorical_gof$X2), df = categorical_gof$df,
+                      p = p_fmt(categorical_gof$p),
+                      "Holm p" = p_fmt(categorical_gof$p_holm), check.names = FALSE))
+```
+
+All four distributions differ from equal category proportions, including after Holm adjustment (@tbl-r6-categorical-tests).
+
+The frequencies show where responses concentrate: **about-right frequency, good/excellent accuracy, and yes on understandability and confidentiality**.
+
+::: {.note}
+H₀ uses 20% per Q9 category, 25% per Q10 category, and 50% yes/50% no for Q11 and Q12. Hₐ specifies at least one different proportion. These are classroom reference distributions; rejecting them does not by itself establish acceptable performance. All expected counts exceed 5.
+:::
+
+## R6 Operational ratings Descriptive statistics
+
+```{r}
+#| label: tbl-r6-ratings
+#| tbl-cap: "Operational ratings on their respective five-point scales"
+#| results: asis
+rating_table <- describe_table(operations)
+rating_table$Median <- NULL
+rating_table[["Favorable %"]] <- vapply(operations$Variable, function(v) pct(share(v, 4:5)), character(1))
+show_table(rating_table)
+```
+
+::: {.compact}
+Overall management is rated good/excellent by **`r pct(share("q37r", 4:5))`** of valid respondents. Among Q31–Q34, confidentiality has the highest mean and simple loan applications the lowest (@tbl-r6-ratings).
+:::
+
+::: {.note}
+Q31–Q34: 1 = strongly disagree, 3 = uncertain, 5 = strongly agree; favorable = agree/strongly agree. Q37r: 1 = very poor, 3 = average, 5 = excellent; favorable = good/excellent. Q37 excludes `r N - operations$n[5]` responses.
+:::
+
+## R6 One-sample t-tests
+
+```{r}
+#| label: tbl-r6-rating-tests
+#| tbl-cap: "Operational ratings Two-sided one-sample t-tests against 3"
+#| results: asis
+show_table(test_table(operations))
+```
+
+::: {.takeaway}
+All five mean ratings exceed their midpoint, with sufficient evidence of differences after Holm adjustment (all adjusted p < .001; @tbl-r6-rating-tests). Members generally evaluate operations positively.
+:::
+
+::: {.compact}
+The positive overall assessment still leaves room to improve application simplicity and address the statement-frequency and confidentiality concerns shown in @tbl-r6-frequency and @tbl-r6-binary.
+:::
+
+## Recommended next steps
+
+1. **Check product understanding.** Verify the unusually low recognition of regular share accounts, then clarify names and benefits for poorly recognized services.
+2. **Investigate the gap between awareness and use.** Ask members who know about signature and car loans what prevents use before choosing a campaign or pricing change.
+3. **Follow up on operational concerns.** Explore statement-frequency preferences, the Q12 confidentiality concerns, and friction in loan applications.
+4. **Collect the missing decision evidence.** Obtain Q2, Q28, and Q29 to answer the joining and outside-borrowing questions directly.
+
+::: {.note}
+These are recommendations based on the response patterns, not tested causal effects. Self-reported use is not an observed borrowing or conversion rate.
+:::
+
+## Appendix Data coding and exclusions {.dense}
+
+| Variables | Coding used in this report | Exclusions |
+|---|---|---|
+| Q7r, Q8r | 6 − original Q7/Q8; 1 = very low, 5 = very high | Original code 6 and missing values |
+| Q13r–Q26r | 4 − original Q13–Q26; 1 = unaware, 2 = aware/not used, 3 = aware/used | Missing or invalid responses |
+| Q9r | 6 − original Q9; 1 = never, 5 = too often | Missing or invalid responses |
+| Q10r | 5 − original Q10; 1 = poor, 4 = excellent | Missing or invalid responses |
+| Q11, Q12rc | 1 = yes, 2 = no | Code 3 = no answer |
+| Q30–Q34 | Original agreement scores; 1–5 | Missing or invalid responses |
+| Q37r | 6 − original Q37; 1 = very poor, 5 = excellent | Original code 6 and missing values |
+
+::: {.note}
+All recodes are derived from original columns. Q9r measures frequency, not a uniformly favorable scale: “about right” is the desired response. Items with different meanings and scales are analyzed separately.
+:::
+
+## Appendix Valid responses and assumptions
+
+```{r}
+#| label: tbl-missingness
+#| tbl-cap: "Items with excluded responses"
+#| results: asis
+show_table(data.frame(Item = c("Q7 Savings rates", "Q8 Borrowing rates",
+                               "Q12 Confidentiality", "Q37 Overall management"),
+                      "Valid n" = c(sum(!is.na(dat$q7r)), sum(!is.na(dat$q8r)),
+                                    sum(!is.na(dat$q12rc)), sum(!is.na(dat$q37r))),
+                      Excluded = c(sum(is.na(dat$q7r)), sum(is.na(dat$q8r)),
+                                   sum(is.na(dat$q12rc)), sum(is.na(dat$q37r))),
+                      check.names = FALSE))
+```
+
+::: {.compact}
+- All other reported items have `r N` valid responses. Missing responses are excluded item by item; no values are imputed.
+- T-tests follow the class's interval approximation for numerical rating scores. Goodness-of-fit tests retain zero-count categories and have adequate expected counts.
+- Responses are treated as independent across members. Separate service tests are adjusted together using Holm's method; R2's two tests and each R6 test family are adjusted separately.
+- The findings describe the supplied respondents. Nonresponse and the mismatch with the narrative's sample count limit population generalization.
+:::
+
+## Appendix Reproduce and publish
+
+::: {.compact}
+Place this QMD beside **Case 31 Data_efcu_1_cleaned.sav**. Install the packages once in the R console:
+
+```{r}
+#| eval: false
+#| echo: true
+install.packages(c("foreign", "knitr", "rmarkdown"))
+```
+
+Render with Quarto:
+
+```{bash}
+#| eval: false
+#| echo: true
+quarto render Frank_Renn_Case31_R1_R2_R5_R6.qmd
+```
+
+The project archive contains a ready-rendered HTML file and an identical `index.html` for GitHub Pages. After publication, enter the actual repository and Pages URLs in the QMD's `params`, render again, and upload the updated HTML.
+:::
+
+::: {.note}
+The HTML embeds its figures, styles, and presentation resources. An internet connection is not required to view the downloaded presentation.
+:::
+
+## Appendix 
+
+-   [View my GitHub Pages report](https://falasol.github.io/case31/R1R2R5R6.html)
+-   [GithUb Repo for Case 31](https://github.com/falasol/case31)
